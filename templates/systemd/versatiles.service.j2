@@ -28,7 +28,7 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
                 --mount type=bind,src={{ versatiles_data_path }},dst=/data \
                 --read-only \
                 --env-file={{ versatiles_env_path }} \
-                {{ versatiles_container_image }} versatiles serve -s frontend.br.tar /data/osm.versatiles
+                {{ versatiles_container_image }} versatiles serve -s frontend-dev.br.tar /data/osm.versatiles
 
 {% for network in versatiles_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ versatiles_identifier }}
