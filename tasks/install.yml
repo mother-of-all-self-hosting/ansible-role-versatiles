@@ -29,13 +29,8 @@
   register: versatiles_support_files_result
 
 - name: Ensure VersaTiles built tile data file downloaded
+  ansible.builtin.include_tasks: download.yml
   when: versatiles_built_tile_data_download_auto | bool
-  ansible.builtin.get_url:
-    url: "{{ versatiles_built_tile_data_url }}"
-    dest: "{{ versatiles_data_path }}/osm.versatiles"
-    mode: "0640"
-    owner: "{{ versatiles_uid }}"
-    group: "{{ versatiles_gid }}"
   register: versatiles_built_tile_data_file_result
 
 - name: Ensure VersaTiles container image is pulled via community.docker.docker_image

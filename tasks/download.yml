@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2023 Slavi Pantaleev
+# SPDX-FileCopyrightText: 2025 Suguru Hirahara
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Check existence of VersaTiles built tile data file
+  ansible.builtin.stat:
+    path: "{{ versatiles_data_path }}/osm.versatiles"
+  register: versatiles_built_tile_data_file
+
+- name: Install VersaTiles built tile data file
+  when: "not versatiles_built_tile_data_file.stat.exists | bool"
+  block:
+    - name: Download VersaTiles built tile data file
+      ansible.builtin.get_url:
+        url: "{{ versatiles_built_tile_data_url }}"
+        dest: "{{ versatiles_data_path }}/osm.versatiles"
+        mode: "0640"
+        owner: "{{ versatiles_uid }}"
+        group: "{{ versatiles_gid }}"
