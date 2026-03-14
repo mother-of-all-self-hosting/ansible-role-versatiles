@@ -1,6 +1,12 @@
+<!--
+SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
 # Versatiles Ansible Role
 
-![versatiles Logo](assets/logo.png)
+
 
 
 [VersaTiles](https://versatiles.org/) is a free stack for generating and serving vector tiles. This role helps you to set up versatiles:
