@@ -215,6 +215,12 @@ versatiles_container_cleanup_command: |
   echo "Failed to remove stale container {{ versatiles_identifier }} after {{ versatiles_container_cleanup_timeout_seconds }} attempts" >&2;
   exit 1
 
+# Specify .versatiles built tile data file URL
+versatiles_built_tile_data_url: ""
+
+# Control if .versatiles file is downloaded automatically
+versatiles_built_tile_data_download_auto: true
+
 # Specify the timezone
 versatiles_environment_variables_tz: UTC
 
