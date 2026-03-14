@@ -1,10 +1,10 @@
 ---
 galaxy_info:
-  author: Suguru Hirahara
-  company: progressiv
-  role_name: actual
-  namespace: progressiv
-  description: Actual
+  author: Julian-Samuel Gebühr
+  company: mash
+  role_name: versatiles
+  namespace: mash
+  description: VersaTiles
   platforms:
     - name: Debian
       versions:
