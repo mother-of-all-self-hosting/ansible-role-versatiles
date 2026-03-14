@@ -8,7 +8,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-# Project source code URL: https://github.com/versatilesbudget/versatiles
+# Project source code URL: https://github.com/versatiles-org/versatiles-rs
 
 versatiles_enabled: true
 
@@ -16,8 +16,8 @@ versatiles_identifier: versatiles
 versatiles_base_path: "/{{ versatiles_identifier }}"
 versatiles_data_path: "{{ versatiles_base_path }}/data"
 
-# renovate: datasource=docker depName=versatilesbudget/versatiles-server versioning=semver
-versatiles_version: 26.3.0
+# renovate: datasource=docker depName=ghcr.io/versatiles-org/versatiles
+versatiles_version: v3.8.1
 
 versatiles_uid: ""
 versatiles_gid: ""
@@ -35,12 +35,13 @@ versatiles_hostname: ""
 # technical limitations.
 versatiles_path_prefix: /
 
-versatiles_container_image: "{{ versatiles_container_image_registry_prefix }}versatilesbudget/versatiles-server:{{ versatiles_container_image_tag }}"
-versatiles_container_image_tag: "{{ versatiles_version }}"
+versatiles_container_image: "{{ versatiles_container_image_registry_prefix }}versatiles-org/versatiles-frontend:{{ versatiles_container_image_tag }}"
+versatiles_container_image_tag: "{{ versatiles_version }}-debian"
 versatiles_container_image_registry_prefix: "{{ versatiles_container_image_registry_prefix_upstream }}"
 versatiles_container_image_registry_prefix_upstream: "{{ versatiles_container_image_registry_prefix_upstream_default }}"
-versatiles_container_image_registry_prefix_upstream_default: docker.io/
+versatiles_container_image_registry_prefix_upstream_default: ghcr.io/
 versatiles_container_image_force_pull: "{{ versatiles_container_image.endswith(':latest') }}"
+# TODO: add tasks to self-build the image
 
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 versatiles_container_network: "{{ versatiles_identifier }}"
