@@ -5,24 +5,24 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Perform Actual installation tasks
-  when: actual_enabled | bool
+- name: Perform VersaTiles installation tasks
+  when: versatiles_enabled | bool
   tags:
     - setup-all
-    - setup-actual
+    - setup-versatiles
     - install-all
-    - install-actual
+    - install-versatiles
   block:
-    - name: Validate Actual configuration
+    - name: Validate VersaTiles configuration
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
-    - name: Install Actual
+    - name: Install VersaTiles
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
-- name: Perform Actual uninstallation tasks
-  when: not actual_enabled | bool
+- name: Perform VersaTiles uninstallation tasks
+  when: not versatiles_enabled | bool
   tags:
     - setup-all
-    - setup-actual
+    - setup-versatiles
   block:
-    - name: Uninstall Actual
+    - name: Uninstall VersaTiles
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
