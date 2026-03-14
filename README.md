@@ -1,31 +1,26 @@
 <!--
+SPDX-FileCopyrightText: 2023 Slavi Pantaleev
 SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
+SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-# Versatiles Ansible Role
+# Actual Ansible role
 
+This is an [Ansible](https://www.ansible.com/) role which installs [Actual](https://actualbudget.org) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
 
+This role *implicitly* depends on:
 
+- [`com.devture.ansible.role.playbook_help`](https://github.com/devture/com.devture.ansible.role.playbook_help)
+- [`com.devture.ansible.role.systemd_docker_base`](https://github.com/devture/com.devture.ansible.role.systemd_docker_base)
 
-[VersaTiles](https://versatiles.org/) is a free stack for generating and serving vector tiles. This role helps you to set up versatiles:
+Check [`defaults/main.yml`](defaults/main.yml) for the full list of supported options. Refer to [this page](docs/configuring-actual.md) for details about setting up the service with this role.
 
-- with everything run in [Docker](https://www.docker.com/) containers
-- powered by [the official versatiles container image](https://github.com/versatiles-org/versatiles-docker/pkgs/container/versatiles)
+💡 For an Ansible playbook which integrates this role and makes it easier to use, see the [Mother-of-All-Self-Hosting Ansible playbook](https://app.radicle.xyz/nodes/seed.radicle.garden/rad%3Az2SXkaceJw3YmS89T1xGysnFSjWsw).
 
+## Development
 
-## Installing
+You can optionally install [pre-commit](https://pre-commit.com/) so that simple mistakes are checked and noticed before changes are pushed to a remote branch. See [`.pre-commit-config.yaml`](./.pre-commit-config.yaml) for which hooks are to be executed.
 
-To configure and install versatiles on your own server(s), you should use a playbook like [Mother of all self-hosting](https://github.com/mother-of-all-self-hosting/mash-playbook) or write your own.
-
-# Configuring this role for your playbook
-
-```
-versatiles_enabled: true
-versatiles_hostname: 'example.org'
-```
-
-## Support
-
-- Github issues: [moan0s/role-versatiles/issues](https://github.com/moan0s/role-versatiles/issues)
+See [this section](https://pre-commit.com/#usage) on the official documentation for usage.

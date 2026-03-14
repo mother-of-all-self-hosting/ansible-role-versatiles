@@ -1,30 +1,28 @@
+# SPDX-FileCopyrightText: 2023 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-
-- block:
-    - when: versatiles_enabled | bool
+- name: Perform Actual installation tasks
+  when: actual_enabled | bool
+  tags:
+    - setup-all
+    - setup-actual
+    - install-all
+    - install-actual
+  block:
+    - name: Validate Actual configuration
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
-  tags:
-    - setup-all
-    - setup-versatiles
-    - install-all
-    - install-versatiles
-
-- block:
-    - when: versatiles_enabled | bool
+    - name: Install Actual
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
-  tags:
-    - setup-all
-    - setup-versatiles
-    - install-all
-    - install-versatiles
 
-- block:
-    - when: not versatiles_enabled | bool
-      ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
+- name: Perform Actual uninstallation tasks
+  when: not actual_enabled | bool
   tags:
     - setup-all
-    - setup-versatiles
+    - setup-actual
+  block:
+    - name: Uninstall Actual
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"

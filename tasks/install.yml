@@ -1,69 +1,88 @@
+# SPDX-FileCopyrightText: 2023-2025 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2024 Julian-Samuel Gebühr
+# SPDX-FileCopyrightText: 2025, 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-
-- name: Ensure versatiles network is created in Docker
-  community.docker.docker_network:
-    name: "{{ versatiles_container_network }}"
-    driver: bridge
-
-
-- name: Ensure versatiles path exists
+- name: Ensure Actual paths exist
   ansible.builtin.file:
-    path: "{{ item.path }}"
+    path: "{{ item }}"
     state: directory
-    mode: 0700
-    owner: "{{ versatiles_uid }}"
-    group: "{{ versatiles_gid }}"
+    mode: "0750"
+    owner: "{{ actual_uid }}"
+    group: "{{ actual_gid }}"
   with_items:
-    - {path: "{{ versatiles_base_path }}", when: true}
-    - {path: "{{ versatiles_config_path }}", when: true}
+    - "{{ actual_base_path }}"
+    - "{{ actual_data_path }}"
 
-- name: Ensure versatiles data path exists
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    state: directory
-    mode: 0755
-    owner: "{{ versatiles_uid }}"
-    group: "{{ versatiles_gid }}"
+- name: Ensure Actual support files installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/{{ item }}.j2"
+    dest: "{{ actual_base_path }}/{{ item }}"
+    mode: "0640"
+    owner: "{{ actual_uid }}"
+    group: "{{ actual_gid }}"
   with_items:
-    - {path: "{{ versatiles_data_path }}", when: true}
+    - env
+    - labels
+  register: actual_support_files_result
 
-
-- name: Ensure versatiles traefik labels are installed
-  ansible.builtin.template:
-    src: "{{ role_path }}/templates/labels.j2"
-    dest: "{{ versatiles_config_path }}/labels"
-    owner: "{{ versatiles_uid }}"
-    group: "{{ versatiles_gid }}"
-    mode: 0640
-
-- name: Ensure versatiles configuration is deployed
-  ansible.builtin.template:
-    src: "{{ role_path }}/templates/env.j2"
-    dest: "{{ versatiles_config_path }}/env"
-    owner: "{{ versatiles_uid }}"
-    group: "{{ versatiles_gid }}"
-    mode: 0640
-
-- name: Download map data
-  ansible.builtin.get_url:
-    url: "{{ versatiles_map_download }}"
-    dest: "{{ versatiles_data_path }}/osm.versatiles"
-    mode: '0660'
-    owner: "{{ versatiles_uid }}"
-    group: "{{ versatiles_gid }}"
-  when: "{{ versatiles_map_download_auto }}"
-
-- name: Ensure versatiles container image is pulled
+- name: Ensure Actual container image is pulled via community.docker.docker_image
+  when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
   community.docker.docker_image:
-    name: "{{ versatiles_container_image }}"
-    source: "pull"
+    name: "{{ actual_container_image }}"
+    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ actual_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else actual_container_image_force_pull }}"
+  register: actual_container_image_pull_result
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: actual_container_image_pull_result is not failed
 
-- name: Ensure versatiles.service installed
+- name: Ensure Actual container image is pulled via ansible.builtin.command
+  when: devture_systemd_docker_base_container_image_pull_method == 'command'
+  ansible.builtin.command:
+    cmd: "{{ devture_systemd_docker_base_host_command_docker }} pull {{ actual_container_image }}"
+  register: actual_container_image_pull_result
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: actual_container_image_pull_result is not failed
+  changed_when: "'Downloaded newer image' in actual_container_image_pull_result.stdout"
+
+- name: Ensure Actual container network is created via community.docker.docker_network
+  when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
+  community.docker.docker_network:
+    enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
+    name: "{{ actual_container_network }}"
+    driver: bridge
+    driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
+  register: actual_network_creation_result
+
+- name: Ensure Actual container network is created via ansible.builtin.command
+  when: devture_systemd_docker_base_container_network_creation_method == 'command'
+  ansible.builtin.command:
+    cmd: >-
+      {{ devture_systemd_docker_base_host_command_docker }} network create
+      {% if devture_systemd_docker_base_ipv6_enabled %}--ipv6{% endif %}
+      {{ devture_systemd_docker_base_container_networks_driver_options_string }}
+      {{ actual_container_network }}
+  register: actual_network_creation_result
+  changed_when: actual_network_creation_result.rc == 0
+  failed_when: actual_network_creation_result.rc != 0 and 'already exists' not in actual_network_creation_result.stderr
+
+- name: Ensure Actual systemd service is present
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/systemd/versatiles.service.j2"
-    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ versatiles_identifier }}.service"
-    mode: 0644
+    src: "{{ role_path }}/templates/systemd/actual.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ actual_identifier }}.service"
+    mode: "0644"
+  register: actual_systemd_service_result
+
+- name: Determine whether Actual needs a restart
+  ansible.builtin.set_fact:
+    actual_restart_necessary: >-
+      {{
+        actual_support_files_result.changed | default(false)
+        or actual_systemd_service_result.changed | default(false)
+        or actual_container_image_pull_result.changed | default(false)
+      }}

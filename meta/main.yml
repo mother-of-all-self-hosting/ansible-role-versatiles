@@ -1,8 +1,10 @@
+---
 galaxy_info:
-  role_name: versatiles
-  author: Julian-Samuel Gebühr
-  company: Hyteck
-  description: Ansible role to install versatiles, a free stack for generating and serving vector tiles.
+  author: Suguru Hirahara
+  company: progressiv
+  role_name: actual
+  namespace: progressiv
+  description: Actual
   platforms:
     - name: Debian
       versions:
@@ -17,4 +19,4 @@ galaxy_info:
       versions:
         - all
   license: AGPL-3.0-or-later
-  min_ansible_version: '2.1'
+  min_ansible_version: "2.1"
