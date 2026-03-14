@@ -18,11 +18,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Setting up VersaTiles
 
-This is an [Ansible](https://www.ansible.com/) role which installs [VersaTiles](https://versatilesbudget.org) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
+This is an [Ansible](https://www.ansible.com/) role which installs [VersaTiles server](https://github.com/versatiles-org/versatiles-rs) bundled with [the developer front‑end](https://github.com/versatiles-org/versatiles-frontend) to run as a [Docker](https://www.docker.com/) container wrapped in a systemd service.
 
-VersaTiles is a local-first personal finance tool.
+[VersaTiles](https://versatiles.org/) is a free stack for generating, distributing, and using map tiles based on OpenStreetMap data.
 
-See the project's [documentation](https://versatilesbudget.org/docs/) to learn what VersaTiles does and why it might be useful to you.
+See the project's [documentation](https://docs.versatiles.org/) to learn what VersaTiles does and why it might be useful to you.
+
+## Prerequisites
+
+To run a VersaTiles server bundled with the developer front‑end it is necessary to prepare a built tile data file (`*.versatiles`). Refer to [this page](https://docs.versatiles.org/guides/converter.html) on the documentation for details about VersaTiles data converter.
 
 ## Adjusting the playbook configuration
 
@@ -58,6 +62,17 @@ After adjusting the hostname, make sure to adjust your DNS records to point the 
 
 **Note**: hosting VersaTiles under a subpath (by configuring the `versatiles_path_prefix` variable) does not seem to be possible due to VersaTiles's technical limitations.
 
+### Specify built tile data file URL
+
+It is also necessary to set `.versatiles` built tile data file URL by adding the following configuration to your `vars.yml` file:
+
+```yaml
+versatiles_built_tile_data_url: SET_URL_HERE
+```
+
+>[!NOTE]
+> **Pre-built VersaTiles dataset cannot be directly served.** You might wish to use [the container image which includes the VersaTiles binary](https://github.com/versatiles-org/versatiles-docker/blob/main/versatiles/README.md) to download and crop map data.
+
 ### Extending the configuration
 
 There are some additional things you may wish to configure about the service.
@@ -78,7 +93,7 @@ If you use the MASH playbook, the shortcut commands with the [`just` program](ht
 
 ## Usage
 
-After running the command for installation, VersaTiles becomes available at the specified hostname like `https://example.com`. To use it, open the URL on the browser and create an account.
+After running the command for installation, VersaTiles becomes available at the specified hostname like `https://example.com`.
 
 ## Troubleshooting
 
