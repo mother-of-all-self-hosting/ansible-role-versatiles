@@ -8,15 +8,16 @@
 - name: Fail if required VersaTiles settings not defined
   ansible.builtin.fail:
     msg: >-
-      You need to define a required configuration setting (`{{ item }}`).
-  when: "lookup('vars', item, default='') | string | length == 0"
+      You need to define a required configuration setting (`{{ item.name }}`).
+  when: "item.when | bool and lookup('vars', item.name, default='') | string | length == 0"
   with_items:
-    - versatiles_uid
-    - versatiles_gid
-    - versatiles_hostname
-    - versatiles_path_prefix
-    - versatiles_container_network
-    - versatiles_built_tile_data_url
+    - { "name": "versatiles_uid", when: true }
+    - { "name": "versatiles_gid", when: true }
+    - { "name": "versatiles_hostname", when: true }
+    - { "name": "versatiles_path_prefix", when: true }
+    - { "name": "versatiles_container_network", when: true }
+    - { "name": "versatiles_container_labels_traefik_middleware_basic_auth_users", when: "{{ versatiles_container_labels_traefik_middleware_basic_auth_enabled }}" }
+    - { "name": "versatiles_built_tile_data_url", when: true }
 
 - name: Run if Traefik is enabled
   when: versatiles_container_labels_traefik_enabled | bool

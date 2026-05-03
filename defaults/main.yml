@@ -87,6 +87,9 @@ versatiles_container_labels_traefik_priority: 0
 versatiles_container_labels_traefik_entrypoints: web-secure
 versatiles_container_labels_traefik_tls: "{{ versatiles_container_labels_traefik_entrypoints != 'web' }}"
 versatiles_container_labels_traefik_tls_certResolver: default  # noqa var-naming
+versatiles_container_labels_traefik_middleware_basic_auth_enabled: false
+# See: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/basicauth/
+versatiles_container_labels_traefik_middleware_basic_auth_users: ""
 
 # Controls which additional headers to attach to all HTTP requests.
 # To add your own custom request headers, use `versatiles_container_labels_traefik_additional_request_headers_custom`
