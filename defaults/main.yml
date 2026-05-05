@@ -17,7 +17,7 @@ versatiles_base_path: "/{{ versatiles_identifier }}"
 versatiles_data_path: "{{ versatiles_base_path }}/data"
 
 # renovate: datasource=docker depName=ghcr.io/versatiles-org/versatiles
-versatiles_version: v3.9.0
+versatiles_version: v4.0.0
 
 versatiles_uid: ""
 versatiles_gid: ""
