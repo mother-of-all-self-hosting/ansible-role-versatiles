@@ -202,7 +202,7 @@
     # Nothing serves them here, so they are read back off the container.
     - name: Query the labels of the running VersaTiles container
       ansible.builtin.command:
-        cmd: "docker inspect {{ versatiles_defaults.versatiles_identifier }}"
+        cmd: "docker container inspect {{ versatiles_defaults.versatiles_identifier }}"
       register: versatiles_container_inspect
       changed_when: false
 
