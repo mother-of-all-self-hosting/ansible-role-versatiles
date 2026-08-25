@@ -30,7 +30,7 @@ versatiles_data_path: "{{ versatiles_base_path }}/data"
 # is appended by `versatiles_container_image_tag` instead.
 #
 # renovate: datasource=docker depName=ghcr.io/versatiles-org/versatiles-frontend versioning=semver
-versatiles_version: v4.9.1
+versatiles_version: v4.10.0
 
 versatiles_uid: ""
 versatiles_gid: ""
