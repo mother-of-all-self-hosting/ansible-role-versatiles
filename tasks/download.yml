@@ -19,3 +19,4 @@
         mode: "0640"
         owner: "{{ versatiles_uid }}"
         group: "{{ versatiles_gid }}"
+      register: versatiles_built_tile_data_download_result

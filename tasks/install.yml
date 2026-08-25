@@ -31,7 +31,6 @@
 - name: Ensure VersaTiles built tile data file downloaded
   ansible.builtin.include_tasks: download.yml
   when: versatiles_built_tile_data_download_auto | bool
-  register: versatiles_built_tile_data_file_result
 
 - name: Ensure VersaTiles container image is pulled via community.docker.docker_image_pull
   when: devture_systemd_docker_base_container_image_pull_method == 'ansible-module'
@@ -86,7 +85,7 @@
     versatiles_restart_necessary: >-
       {{
         versatiles_support_files_result.changed | default(false)
-        or versatiles_built_tile_data_file_result.changed | default(false)
+        or versatiles_built_tile_data_download_result.changed | default(false)
         or versatiles_systemd_service_result.changed | default(false)
         or versatiles_container_image_pull_result_ansible_module.changed | default(false)
         or versatiles_container_image_pull_result_command.changed | default(false)
