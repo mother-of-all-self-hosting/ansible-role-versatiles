@@ -1,14 +1,29 @@
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 # SPDX-FileCopyrightText: 2026 spatterlight
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Verify VersaTiles systemd service
+- name: Verify VersaTiles
   hosts: all
   become: true
   gather_facts: false
+
   tasks:
+    # The role is not included in this playbook, so its defaults are not in
+    # scope. Reading defaults/main.yml directly keeps the version assertion
+    # below tied to the value that Renovate bumps, with nothing to keep in
+    # sync in this scenario. include_vars reads from the controller.
+    #
+    # Only values describing the role itself may be read from this namespace.
+    # Anything this scenario tunes (the published port, the hostname, the
+    # timezone) comes from the scenario's group_vars instead.
+    - name: Load the VersaTiles role defaults
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: versatiles_defaults
+
     - name: Wait for VersaTiles service to become active (up to 180s)
       ansible.builtin.systemd:
         name: versatiles.service
@@ -17,6 +32,9 @@
       retries: 36
       delay: 5
 
+    # `Restart=always` means the unit reports "active" for a container that is
+    # crash-looping, so this proves very little on its own. Everything below is
+    # what actually distinguishes a serving VersaTiles from a restarting one.
     - name: Assert VersaTiles service is active
       ansible.builtin.assert:
         that: versatiles_service.status.ActiveState == 'active'
@@ -29,25 +47,216 @@
         cmd: journalctl -xeu versatiles.service
       changed_when: false
 
-    - name: Wait for VersaTiles HTTP endpoint to respond (up to 10m)
+    # NEGATIVE CONTROL, established by running the image by hand with no tile
+    # source at all: such an instance answers `/` with 200 and the full
+    # front-end HTML, answers `/status` with "ready!", and only gives itself
+    # away at `/tiles/index.json`, where it returns an empty list.
+    #
+    # That is why `/` returning 200 - which is what this scenario used to
+    # assert, and nothing more - could not fail. It is kept, because serving
+    # the bundled front-end is the reason this role uses the `-frontend` image
+    # rather than the plain server image, but it is not the gate.
+    - name: Wait for the VersaTiles front-end to be served (up to 180s)
       ansible.builtin.uri:
-        url: "http://localhost:8080/"
+        url: "http://127.0.0.1:{{ versatiles_molecule_http_bind_port }}/"
         method: GET
-        status_code: [200, 302]
         follow_redirects: none
-      register: versatiles_endpoint
-      until: versatiles_endpoint.status in [200, 302]
-      retries: 120
+        return_content: true
+      register: versatiles_frontend
+      until: versatiles_frontend.status == 200
+      retries: 36
       delay: 5
 
-    - name: Assert VersaTiles HTTP endpoint responds
+    - name: Assert the VersaTiles front-end is served
       ansible.builtin.assert:
-        that: versatiles_endpoint.status in [200, 302]
-        fail_msg: "VersaTiles did not respond as expected ({{ versatiles_endpoint.status | default('no response') }})"
-        success_msg: "VersaTiles responded with {{ versatiles_endpoint.status }}"
+        that: "'<title>VersaTiles' in versatiles_frontend.content"
+        fail_msg: "VersaTiles did not serve its bundled front-end at /"
+        success_msg: "VersaTiles serves its bundled front-end at /"
 
-    - name: Show VersaTiles systemd service status summary
+    # The role's whole job on the data side is to get a `.versatiles` container
+    # onto the host and bind-mount it in as /data/osm.versatiles. VersaTiles
+    # derives the tile source id from the file name, so `osm` appearing here is
+    # the proof that the mount and the argument in the systemd unit both landed.
+    # An instance started without a tile source - which is what dropping the
+    # argument from the unit gives you - serves everything above identically
+    # and returns an empty list here.
+    - name: Query the tile sources that VersaTiles serves
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ versatiles_molecule_http_bind_port }}/tiles/index.json"
+        method: GET
+      register: versatiles_tile_sources
+
+    - name: Assert VersaTiles serves the tile source the role mounted
+      ansible.builtin.assert:
+        that: versatiles_tile_sources.json == ['osm']
+        fail_msg: >-
+          VersaTiles serves tile sources {{ versatiles_tile_sources.json | default('none') }},
+          expected exactly ['osm'] from the mounted /data/osm.versatiles
+        success_msg: "VersaTiles serves the 'osm' tile source out of the mounted container"
+
+    # A registered tile source still says nothing about whether tiles can be
+    # read out of it. Fetching one and looking at its bytes does.
+    #
+    # ansible.builtin.uri would have to hand a Mapbox Vector Tile - a protobuf,
+    # optionally gzipped - back through a text-oriented result, so the fetch
+    # happens in Python instead and reports facts about the bytes for the
+    # asserts below. `Accept-Encoding: identity` asks VersaTiles not to
+    # recompress, so what arrives is the tile itself.
+    - name: Fetch a tile from VersaTiles
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - |
+            import json
+            import urllib.error
+            import urllib.request
+
+            url = "http://127.0.0.1:{{ versatiles_molecule_http_bind_port }}{{ versatiles_molecule_tile_path }}"
+            request = urllib.request.Request(url, headers={"Accept-Encoding": "identity"})
+
+            # An error response is a result to be asserted on, not a reason for
+            # this task to fail - a 404 has to reach the assert that says what
+            # the tile should have looked like.
+            try:
+                response = urllib.request.urlopen(request, timeout=60)
+            except urllib.error.HTTPError as error:
+                response = error
+
+            with response:
+                status = response.status
+                content_type = response.headers.get("Content-Type", "")
+                content_encoding = response.headers.get("Content-Encoding", "")
+                body = response.read()
+
+            print(json.dumps({
+                "status": status,
+                "content_type": content_type,
+                "content_encoding": content_encoding,
+                "length": len(body),
+                "first_byte": body[0] if body else -1,
+                "has_layer": "{{ versatiles_molecule_tile_layer }}".encode() in body,
+            }))
+      register: versatiles_tile_probe
+      changed_when: false
+
+    - name: Record what the fetched VersaTiles tile looks like
+      ansible.builtin.set_fact:
+        versatiles_tile: "{{ versatiles_tile_probe.stdout | from_json }}"
+
+    - name: Assert VersaTiles serves the tile as a vector tile
+      ansible.builtin.assert:
+        that:
+          - versatiles_tile.status == 200
+          - versatiles_tile.content_type == 'application/vnd.mapbox-vector-tile'
+          - versatiles_tile.content_encoding == ''
+        fail_msg: >-
+          VersaTiles answered {{ versatiles_molecule_tile_path }} with
+          status {{ versatiles_tile.status }} and content type
+          '{{ versatiles_tile.content_type }}'
+        success_msg: "VersaTiles answers {{ versatiles_molecule_tile_path }} with a vector tile"
+
+    # A Mapbox Vector Tile is a protobuf whose only top-level field is `layers`
+    # (field 3, length-delimited), so every valid tile starts with the byte
+    # 0x1a (26). Layer names are stored as plain strings right after it, which
+    # is why the shortbread layer this dataset carries can be looked for
+    # directly.
+    #
+    # Together these rule out the failure that matters here: VersaTiles happily
+    # serving something that is not a tile (an error page, an empty body, or a
+    # still-compressed blob) under a tile content type.
+    - name: Assert the fetched VersaTiles tile really is a Mapbox Vector Tile
+      ansible.builtin.assert:
+        that:
+          - versatiles_tile.length > 1024
+          - versatiles_tile.first_byte == 26
+          - versatiles_tile.has_layer
+        fail_msg: >-
+          The payload at {{ versatiles_molecule_tile_path }} is not a Mapbox Vector Tile
+          ({{ versatiles_tile.length }} bytes, first byte {{ versatiles_tile.first_byte }},
+          '{{ versatiles_molecule_tile_layer }}' layer present: {{ versatiles_tile.has_layer }})
+        success_msg: >-
+          {{ versatiles_molecule_tile_path }} is a {{ versatiles_tile.length }} byte vector tile
+          carrying the '{{ versatiles_molecule_tile_layer }}' layer
+
+    # templates/env.j2 is the role's only channel into the container's
+    # environment. The timezone this scenario asks for is one no image would
+    # default to, so finding it inside the process proves the env file was
+    # rendered, mounted and read - not merely written to disk.
+    - name: Query the environment of the running VersaTiles container
+      ansible.builtin.command:
+        cmd: "docker exec {{ versatiles_defaults.versatiles_identifier }} printenv TZ"
+      register: versatiles_container_tz
+      changed_when: false
+
+    - name: Assert the role's environment file reached the VersaTiles process
+      ansible.builtin.assert:
+        that: versatiles_container_tz.stdout == versatiles_environment_variables_tz
+        fail_msg: >-
+          The VersaTiles process has TZ={{ versatiles_container_tz.stdout }},
+          but the role was asked for {{ versatiles_environment_variables_tz }}
+        success_msg: "The VersaTiles process has TZ={{ versatiles_container_tz.stdout }}"
+
+    # templates/labels.j2 is the other direction the role's configuration
+    # travels: into container labels that a Traefik running elsewhere reads.
+    # Nothing serves them here, so they are read back off the container.
+    - name: Query the labels of the running VersaTiles container
+      ansible.builtin.command:
+        cmd: "docker inspect {{ versatiles_defaults.versatiles_identifier }}"
+      register: versatiles_container_inspect
+      changed_when: false
+
+    - name: Record the labels of the running VersaTiles container
+      ansible.builtin.set_fact:
+        versatiles_container_labels: "{{ (versatiles_container_inspect.stdout | from_json)[0].Config.Labels }}"
+
+    - name: Assert the role's Traefik labels reached the VersaTiles container
+      ansible.builtin.assert:
+        that:
+          - >-
+            versatiles_container_labels['traefik.http.routers.versatiles.rule']
+            == 'Host(`' ~ versatiles_hostname ~ '`)'
+          - >-
+            versatiles_container_labels['traefik.http.services.versatiles.loadbalancer.server.port']
+            == versatiles_defaults.versatiles_container_http_port | string
+          - >-
+            versatiles_container_labels['traefik.http.middlewares.versatiles-add-response-headers.headers.customresponseheaders.X-Content-Type-Options']
+            == versatiles_defaults.versatiles_http_header_content_type_options
+        fail_msg: >-
+          The VersaTiles container does not carry the Traefik labels the role renders
+          ({{ versatiles_container_labels | dict2items | map(attribute='key') | select('match', 'traefik') | list }})
+        success_msg: "The VersaTiles container carries the Traefik labels the role renders"
+
+    # Tying the running version to `versatiles_version` is what makes this
+    # scenario a real test of the version that Renovate bumps: a bump that
+    # produces an unusable image, or one whose front-end image was never
+    # published, cannot pass here.
+    #
+    # VersaTiles reports its version without a leading `v` (`versatiles 4.9.1`)
+    # while the role's version variable carries one. Any leading `v` is
+    # normalized away on both sides, so that this keeps holding if either side
+    # ever changes.
+    - name: Query the version that the running VersaTiles reports
+      ansible.builtin.command:
+        cmd: "docker exec {{ versatiles_defaults.versatiles_identifier }} /app/versatiles --version"
+      register: versatiles_reported_version
+      changed_when: false
+
+    - name: Assert the running VersaTiles is the version the role asks for
+      ansible.builtin.assert:
+        that: >-
+          (versatiles_reported_version.stdout | regex_replace('^versatiles ', '') | regex_replace('^v', ''))
+          == (versatiles_defaults.versatiles_version | regex_replace('^v', ''))
+        fail_msg: >-
+          VersaTiles reports '{{ versatiles_reported_version.stdout }}',
+          but the role asks for {{ versatiles_defaults.versatiles_version }}
+        success_msg: "VersaTiles reports {{ versatiles_reported_version.stdout }}"
+
+    - name: Show VersaTiles verification summary
       ansible.builtin.debug:
         msg:
           - "VersaTiles systemd: {{ versatiles_service.status.ActiveState }}"
-          - "VersaTiles HTTP: {{ versatiles_endpoint.status }}"
+          - "VersaTiles version: {{ versatiles_reported_version.stdout }}"
+          - "VersaTiles tile sources: {{ versatiles_tile_sources.json }}"
+          - "VersaTiles tile: {{ versatiles_tile.length }} bytes of {{ versatiles_tile.content_type }}"
+          - "VersaTiles TZ: {{ versatiles_container_tz.stdout }}"

@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2018-2025 Slavi Pantaleev
+SPDX-FileCopyrightText: 2018-2026 Slavi Pantaleev
 SPDX-FileCopyrightText: 2019-2022 Aaron Raimist
 SPDX-FileCopyrightText: 2019-2023 MDAD project contributors
 SPDX-FileCopyrightText: 2023 QEDeD
@@ -47,7 +47,20 @@ Currently there is one testing scenario available.
 
 ### `default`
 
-Tests a standard VersaTiles installation.
+Tests a standard VersaTiles installation, serving a small pre-built `.versatiles` container (the Dresden area, about 19 MB) that is downloaded the same way the role downloads one on a real host.
+
+Besides the systemd service being active, it asserts that:
+
+- the bundled front-end is served at `/`
+- `/tiles/index.json` lists the `osm` tile source, which only appears if the data directory really is bind-mounted and named in the systemd unit
+- a tile fetched from `/tiles/osm/0/0/0` is a real Mapbox Vector Tile (a protobuf carrying a `shortbread` layer), rather than merely a 200 response
+- the timezone from `templates/env.j2` is present in the running process's environment
+- the Traefik labels from `templates/labels.j2` are attached to the container
+- the version the running binary reports is the one `versatiles_version` asks for
+
+The last point is why a Renovate version bump is allowed to merge itself: a bump to a version whose front-end image is missing or broken cannot pass this scenario.
+
+A VersaTiles instance with no tile source at all still answers `/` with 200 and serves the whole front-end, so none of the tile assertions may be reduced to a status-code check.
 
 ## Running
 
