@@ -8,7 +8,7 @@
     "`versioning=semver` on the annotation in defaults/main.yml is what keeps the tag list sane: ghcr.io/versatiles-org/versatiles-frontend publishes every release four times (`v4.9.1`, `v4.9.1-debian`, `v4.9.1-alpine`, `v4.9.1-scratch`), and strict semver reads the flavoured tags as prereleases and skips them as unstable. `versatiles_container_image_tag` appends the `-debian` flavour itself. The annotation names the `-frontend` image rather than the plain `versatiles` server image because that is the one the role pulls; the two are separate packages that have diverged before (`v3.0.1` was only ever published as a front-end image)."
   ],
   "extends": [
-    "github>mother-of-all-self-hosting/renovate-config#v1.0.0",
-    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.0.0"
+    "github>mother-of-all-self-hosting/renovate-config#v1.1.0",
+    "github>mother-of-all-self-hosting/renovate-config//patch-automerge#v1.1.0"
   ]
 }
