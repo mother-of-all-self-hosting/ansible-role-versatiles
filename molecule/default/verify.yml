@@ -242,9 +242,7 @@
         that: >-
           (versatiles_reported_version.stdout | regex_replace('^versatiles ', '') | regex_replace('^v', ''))
           == (versatiles_defaults.versatiles_version | regex_replace('^v', ''))
-        fail_msg: >-
-          VersaTiles reports '{{ versatiles_reported_version.stdout }}',
-          but the role asks for {{ versatiles_defaults.versatiles_version }}
+        fail_msg: "VersaTiles reports {{ versatiles_reported_version.stdout | default('none') }}, expected {{ versatiles_defaults.versatiles_version }}"
         success_msg: "VersaTiles reports {{ versatiles_reported_version.stdout }}"
 
     - name: Show the VersaTiles verification summary
