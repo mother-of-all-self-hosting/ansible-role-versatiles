@@ -242,7 +242,7 @@
       register: versatiles_reported_version
       changed_when: false
 
-    - name: Assert the running VersaTiles is the version the role asks for
+    - name: Assert the running VersaTiles is the version this role installs
       ansible.builtin.assert:
         that: >-
           (versatiles_reported_version.stdout | regex_replace('^versatiles ', '') | regex_replace('^v', ''))
