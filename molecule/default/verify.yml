@@ -252,7 +252,7 @@
           but the role asks for {{ versatiles_defaults.versatiles_version }}
         success_msg: "VersaTiles reports {{ versatiles_reported_version.stdout }}"
 
-    - name: Show VersaTiles verification summary
+    - name: Show the VersaTiles verification summary
       ansible.builtin.debug:
         msg:
           - "VersaTiles systemd: {{ versatiles_service.status.ActiveState }}"
