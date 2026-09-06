@@ -231,7 +231,7 @@
     # while the role's version variable carries one. Any leading `v` is
     # normalized away on both sides, so that this keeps holding if either side
     # ever changes.
-    - name: Query the version that the running VersaTiles reports
+    - name: Query the version of the running VersaTiles
       ansible.builtin.command:
         cmd: "docker exec {{ versatiles_defaults.versatiles_identifier }} /app/versatiles --version"
       register: versatiles_reported_version
