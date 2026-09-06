@@ -7,6 +7,8 @@
 - name: Check existence of VersaTiles built tile data file
   ansible.builtin.stat:
     path: "{{ versatiles_data_path }}/osm.versatiles"
+    # Only existence is needed; avoid reading the large dataset for a checksum.
+    get_checksum: false
   register: versatiles_built_tile_data_file
 
 - name: Install VersaTiles built tile data file
