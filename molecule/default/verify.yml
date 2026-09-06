@@ -222,11 +222,6 @@
           ({{ versatiles_container_labels | dict2items | map(attribute='key') | select('match', 'traefik') | list }})
         success_msg: "The VersaTiles container carries the Traefik labels the role renders"
 
-    # Tying the running version to `versatiles_version` is what makes this
-    # scenario a real test of the version that Renovate bumps: a bump that
-    # produces an unusable image, or one whose front-end image was never
-    # published, cannot pass here.
-    #
     # VersaTiles reports its version without a leading `v` (`versatiles 4.9.1`)
     # while the role's version variable carries one. Any leading `v` is
     # normalized away on both sides, so that this keeps holding if either side
