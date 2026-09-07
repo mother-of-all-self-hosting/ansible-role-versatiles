@@ -19,24 +19,27 @@
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
         name: versatiles_defaults
 
-    - name: Wait for VersaTiles service to become active (up to 180s)
-      ansible.builtin.systemd:
+    - name: Wait for the VersaTiles systemd service to become active (up to 180s)
+      ansible.builtin.systemd_service:
         name: versatiles.service
       register: versatiles_service
       until: versatiles_service.status.ActiveState == 'active'
       retries: 36
       delay: 5
+      # So that giving up is reported by the assertion below rather than as a
+      # wall of systemd unit properties.
+      failed_when: false
 
-    # `Restart=always` means the unit reports "active" for a container that is
-    # crash-looping, so this proves very little on its own. Everything below is
-    # what actually distinguishes a serving VersaTiles from a restarting one.
-    - name: Assert VersaTiles service is active
+    # `Restart=always` in the systemd unit means that even a container which crashes
+    # and gets restarted reads as active here, so this is a precondition rather than
+    # a result.
+    - name: Assert the VersaTiles systemd service is active
       ansible.builtin.assert:
         that: versatiles_service.status.ActiveState == 'active'
-        fail_msg: "versatiles.service not active ({{ versatiles_service.status.ActiveState }})"
+        fail_msg: "versatiles.service is not active ({{ versatiles_service.status.ActiveState }})"
         success_msg: "versatiles.service is active"
 
-    - name: Retrieve VersaTiles service log for debugging
+    - name: Retrieve the VersaTiles systemd service log for debugging
       when: versatiles_debug_service_enabled | bool
       ansible.builtin.command:
         cmd: journalctl -xeu versatiles.service
