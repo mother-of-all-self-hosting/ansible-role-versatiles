@@ -222,16 +222,16 @@
           ({{ versatiles_container_labels | dict2items | map(attribute='key') | select('match', 'traefik') | list }})
         success_msg: "The VersaTiles container carries the Traefik labels the role renders"
 
-    # VersaTiles reports its version without a leading `v` (`versatiles 4.9.1`)
-    # while the role's version variable carries one. Any leading `v` is
-    # normalized away on both sides, so that this keeps holding if either side
-    # ever changes.
     - name: Query the version of the running VersaTiles
       ansible.builtin.command:
         cmd: "docker exec {{ versatiles_defaults.versatiles_identifier }} /app/versatiles --version"
       register: versatiles_reported_version
       changed_when: false
 
+    # `versatiles_version` carries a leading `v` (`v3.14.0`) but the binary
+    # reports the bare version (`versatiles 3.14.0`). Any leading `v` is normalized
+    # away on both sides, so that this keeps holding if either side ever stops
+    # carrying one.
     - name: Assert the running VersaTiles is the version this role installs
       ansible.builtin.assert:
         that: >-
