@@ -198,12 +198,12 @@
     - name: Query the labels of the running VersaTiles container
       ansible.builtin.command:
         cmd: "docker container inspect {{ versatiles_defaults.versatiles_identifier }}"
-      register: versatiles_container_inspect
+      register: versatiles_container_raw
       changed_when: false
 
     - name: Record the labels of the running VersaTiles container
       ansible.builtin.set_fact:
-        versatiles_container_labels: "{{ (versatiles_container_inspect.stdout | from_json)[0].Config.Labels }}"
+        versatiles_container_labels: "{{ (versatiles_container_raw.stdout | from_json)[0].Config.Labels }}"
 
     - name: Assert the role's Traefik labels reached the VersaTiles container
       ansible.builtin.assert:
