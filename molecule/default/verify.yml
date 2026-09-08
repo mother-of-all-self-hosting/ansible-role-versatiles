@@ -228,7 +228,7 @@
     - name: Query the version of the running VersaTiles
       ansible.builtin.command:
         cmd: "docker exec {{ versatiles_defaults.versatiles_identifier }} /app/versatiles --version"
-      register: versatiles_reported_version
+      register: versatiles_version_reported
       changed_when: false
 
     # `versatiles_version` carries a leading `v` (`v3.14.0`) but the binary
@@ -237,16 +237,16 @@
     - name: Assert the running VersaTiles is the version this role installs
       ansible.builtin.assert:
         that: >-
-          (versatiles_reported_version.stdout | regex_replace('^versatiles ', '') | regex_replace('^v', ''))
+          (versatiles_version_reported.stdout | regex_replace('^versatiles ', '') | regex_replace('^v', ''))
           == (versatiles_defaults.versatiles_version | regex_replace('^v', ''))
-        fail_msg: "VersaTiles reports {{ versatiles_reported_version.stdout | default('none') }}, expected {{ versatiles_defaults.versatiles_version }}"
-        success_msg: "VersaTiles reports {{ versatiles_reported_version.stdout }}"
+        fail_msg: "VersaTiles reports {{ versatiles_version_reported.stdout | default('none') }}, expected {{ versatiles_defaults.versatiles_version }}"
+        success_msg: "VersaTiles reports {{ versatiles_version_reported.stdout }}"
 
     - name: Show the VersaTiles verification summary
       ansible.builtin.debug:
         msg:
           - "VersaTiles systemd: {{ versatiles_service.status.ActiveState }}"
-          - "VersaTiles version: {{ versatiles_reported_version.stdout }}"
+          - "VersaTiles version: {{ versatiles_version_reported.stdout }}"
           - "VersaTiles tile sources: {{ versatiles_tile_sources.json }}"
           - "VersaTiles tile: {{ versatiles_tile.length }} bytes of {{ versatiles_tile.content_type }}"
           - "VersaTiles TZ: {{ versatiles_container_tz.stdout }}"
