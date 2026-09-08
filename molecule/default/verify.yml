@@ -42,7 +42,7 @@
     - name: Retrieve the VersaTiles systemd service log for debugging
       when: versatiles_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: journalctl -xeu versatiles.service
+        cmd: journalctl --no-pager --output=cat --unit=versatiles.service
       changed_when: false
 
     # NEGATIVE CONTROL, established by running the image by hand with no tile
