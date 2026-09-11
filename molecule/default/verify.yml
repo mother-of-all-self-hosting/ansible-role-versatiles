@@ -10,6 +10,10 @@
   become: true
   gather_facts: false
 
+  vars:
+    versatiles_verify_units:
+      - versatiles.service
+
   tasks:
     - name: Verify that VersaTiles works
       block:
@@ -21,13 +25,14 @@
             file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
             name: versatiles_defaults
 
-        - name: Wait for the VersaTiles systemd service to become active (up to 180s)
+        - name: Wait for the VersaTiles systemd services to become active (up to 180s each)
           ansible.builtin.systemd_service:
-            name: versatiles.service
-          register: versatiles_service
-          until: versatiles_service.status.ActiveState == 'active'
+            name: "{{ item }}"
+          register: versatiles_services
+          until: versatiles_services.status.ActiveState == 'active'
           retries: 36
           delay: 5
+          loop: "{{ versatiles_verify_units }}"
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
           failed_when: false
@@ -35,17 +40,20 @@
         # `Restart=always` in the systemd unit means that even a container which crashes
         # and gets restarted reads as active here, so this is a precondition rather than
         # a result.
-        - name: Assert the VersaTiles systemd service is active
+        - name: Assert the VersaTiles systemd services are active
           ansible.builtin.assert:
-            that: versatiles_service.status.ActiveState == 'active'
-            fail_msg: "versatiles.service is not active ({{ versatiles_service.status.ActiveState }})"
-            success_msg: "versatiles.service is active"
+            that: versatiles_services.results | map(attribute='status.ActiveState') | unique | list == ['active']
+            fail_msg: >-
+              Not every service is active:
+              {{ dict(versatiles_verify_units | zip(versatiles_services.results | map(attribute='status.ActiveState'))) }}
+            success_msg: "Every systemd service is active"
 
-        - name: Retrieve the VersaTiles systemd service log for debugging
+        - name: Retrieve the VersaTiles systemd services log for debugging
           when: versatiles_debug_service_enabled | bool
           ansible.builtin.command:
-            cmd: journalctl --no-pager --output=cat --unit=versatiles.service
+            cmd: "journalctl --no-pager --output=cat --unit={{ item }}"
           changed_when: false
+          loop: "{{ versatiles_verify_units }}"
 
         # NEGATIVE CONTROL, established by running the image by hand with no tile
         # source at all: such an instance answers `/` with 200 and the full
@@ -247,7 +255,7 @@
         - name: Show the VersaTiles verification summary
           ansible.builtin.debug:
             msg:
-              - "VersaTiles systemd: {{ versatiles_service.status.ActiveState }}"
+              - "VersaTiles systemd: {% for unit, state in versatiles_verify_units | zip(versatiles_services.results | map(attribute='status.ActiveState')) %}{{ unit }} ({{ state }}){% if not loop.last %}, {% endif %}{% endfor %}"
               - "VersaTiles version: {{ versatiles_version_reported.stdout }}"
               - "VersaTiles tile sources: {{ versatiles_tile_sources.json }}"
               - "VersaTiles tile: {{ versatiles_tile.length }} bytes of {{ versatiles_tile.content_type }}"
