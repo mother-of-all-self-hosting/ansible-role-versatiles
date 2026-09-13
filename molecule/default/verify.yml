@@ -193,7 +193,7 @@
         # rendered, mounted and read - not merely written to disk.
         - name: Query the environment of the running VersaTiles container
           ansible.builtin.command:
-            cmd: "docker exec {{ versatiles_defaults.versatiles_identifier }} printenv TZ"
+            cmd: docker exec versatiles printenv TZ
           register: versatiles_container_tz
           changed_when: false
 
@@ -210,7 +210,7 @@
         # Nothing serves them here, so they are read back off the container.
         - name: Query the labels of the running VersaTiles container
           ansible.builtin.command:
-            cmd: "docker container inspect {{ versatiles_defaults.versatiles_identifier }}"
+            cmd: docker container inspect versatiles
           register: versatiles_container_raw
           changed_when: false
 
@@ -237,7 +237,7 @@
 
         - name: Query the version of the running VersaTiles
           ansible.builtin.command:
-            cmd: "docker exec {{ versatiles_defaults.versatiles_identifier }} /app/versatiles --version"
+            cmd: docker exec versatiles /app/versatiles --version
           register: versatiles_version_reported
           changed_when: false
 
