@@ -43,7 +43,10 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       {% for arg in versatiles_container_extra_arguments %}
       {{ arg }} \
       {% endfor %}
-      {{ versatiles_container_image }} /data/osm.versatiles
+      {{ versatiles_container_image }} \
+      {% for arg in versatiles_process_extra_arguments %}
+      {{ arg }} \
+      {% endfor %}
 
 {% for network in versatiles_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ versatiles_identifier }}
