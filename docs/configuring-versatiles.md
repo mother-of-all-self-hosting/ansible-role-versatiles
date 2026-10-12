@@ -11,6 +11,7 @@ SPDX-FileCopyrightText: 2022 Warren Bailey
 SPDX-FileCopyrightText: 2023 Antonis Christofides
 SPDX-FileCopyrightText: 2023 Felix Stupp
 SPDX-FileCopyrightText: 2023 Pierre 'McFly' Marty
+SPDX-FileCopyrightText: 2023, 2024 Julian-Samuel Gebühr
 SPDX-FileCopyrightText: 2024-2026 Suguru Hirahara
 
 SPDX-License-Identifier: AGPL-3.0-or-later
@@ -94,6 +95,29 @@ If you use the MASH playbook, the shortcut commands with the [`just` program](ht
 ## Usage
 
 After running the command for installation, VersaTiles becomes available at the specified hostname like `https://example.com`.
+
+To embed the map on a website, add the following tags to the website:
+
+```html
+<!-- add MapLibre JavaScript and CSS -->
+<script src="https://example.com/assets/lib/maplibre-gl/maplibre-gl.js"></script>
+<link href="https://example.com/assets/lib/maplibre-gl/maplibre-gl.css" rel="stylesheet" />
+
+<!-- add container for the map -->
+<div id="map" style="width:100%;aspect-ratio:16/9"></div>
+
+<!-- start map -->
+<script>
+  new maplibregl.Map({
+    container: 'map',
+    style: 'https://example.com/assets/styles/colorful.json'
+  }).addControl(new maplibregl.NavigationControl());
+</script>
+```
+
+![Map of Dresden](./assets/map-example.webp)
+
+Refer to [examples from MapLibre](https://maplibre.org/maplibre-gl-js/docs/examples/) for details about adjustments.
 
 ## Troubleshooting
 
