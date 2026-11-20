@@ -22,9 +22,6 @@
   with_items:
     - versatiles_uid
     - versatiles_gid
-    - versatiles_hostname
-    - versatiles_path_prefix
-    - versatiles_container_network
     - versatiles_built_tile_data_url
 
 - name: Run if Traefik is enabled
